@@ -1,0 +1,15 @@
+.venv/
+node_modules/
+.next/
+.next-e2e/
+*.tsbuildinfo
+.env
+*.db
+*.db-*
+__pycache__/
+.pytest_cache/
+.data/
+test-results/
+playwright-report/
+*.log
+docs/references/

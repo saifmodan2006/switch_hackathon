@@ -1,0 +1,12 @@
+# Use behind a TLS reverse proxy. Keep default ports bound to loopback.
+services:
+  api:
+    environment:
+      ENVIRONMENT: production
+      FRONTEND_URL: ${FRONTEND_URL:?Set the public HTTPS frontend URL}
+      BACKEND_URL: ${BACKEND_URL:?Set the public HTTPS API URL}
+  agents:
+    environment:
+      ENVIRONMENT: production
+  web:
+    restart: always
