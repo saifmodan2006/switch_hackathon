@@ -270,9 +270,11 @@ async def workflow_action(id: str, action: str, p: Principal = Auth, db: AsyncSe
         deliveries = await db.scalar(select(Delivery.id).join(Approval).where(Approval.workflow_id == id))
         if deliveries:
             raise HTTPException(409, 'A delivery attempt exists. Manual provider reconciliation is required.')
-        row.status = 'CREATED'
+        resume_revision = row.context.get('revision_pending') and row.context.get('revision_request')
+        row.status = 'DRAFTING' if resume_revision else 'CREATED'
         row.error = ''
-        row.context = {}
+        if not resume_revision:
+            row.context = {}
         for approval in (await db.scalars(select(Approval).where(Approval.workflow_id == id, Approval.status.in_(['PENDING','APPROVED']), Approval.executed_at.is_(None)))).all():
             approval.status = 'CANCELLED'
         db.add(WorkflowEvent(org_id=p.org_id, workflow_id=id, kind='RETRY', message='Human requested a fresh collaboration attempt'))
@@ -332,7 +334,6 @@ async def register_agent(id: str, p: Principal = Auth, db: AsyncSession = Db):
     except SwitchError:
         agent.error = 'Identity registered and key preserved. Set addressing to owner_and_owner_agents in Switch Console.'
         await db.commit()
-        raise
     finally:
         await client.close()
     return serialize(agent)

@@ -1,5 +1,7 @@
 # Acceptance matrix
 
+**Live update, November 7:** [live verification](LIVE_VERIFICATION.md) supersedes the historical “unverified live” entries below for the core workflow. PostgreSQL migrated to `e20_switch_bigint`; official Switch/Mattermost, all six distinct agents, real Gemini research/drafting/review, explicit owner approval, exact-content Mailpit capture, follow-up scheduling, completion analytics and a fail-closed outage probe passed. Desktop Console connection remains unverified; no production delivery is claimed. Broader feature gaps below remain applicable.
+
 This matrix distinguishes delivered behavior, deterministic verification, missing scope and external verification gaps. It is deliberately not a claim that the entire original specification has passed.
 
 | Final criterion | Status | Evidence / remaining work |

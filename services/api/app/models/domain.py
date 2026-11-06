@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 from uuid import uuid4
-from sqlalchemy import String, Text, DateTime, ForeignKey, Integer, Boolean, JSON, UniqueConstraint, Index
+from sqlalchemy import String, Text, DateTime, ForeignKey, Integer, BigInteger, Boolean, JSON, UniqueConstraint, Index
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
@@ -109,8 +109,8 @@ class Agent(Identity, Tenant, Base):
     participant_id: Mapped[str] = mapped_column(String(200), default='')
     encrypted_key: Mapped[str] = mapped_column(Text, default='')
     connection_id: Mapped[str] = mapped_column(String(36), default=uid)
-    cursor: Mapped[int] = mapped_column(Integer, default=0)
-    generation: Mapped[int | None] = mapped_column(Integer)
+    cursor: Mapped[int] = mapped_column(BigInteger, default=0)
+    generation: Mapped[int | None] = mapped_column(BigInteger)
     rooms: Mapped[list] = mapped_column(JSON, default=list)
     status: Mapped[str] = mapped_column(String(30), default='unconfigured')
     last_seen: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
@@ -122,7 +122,7 @@ class Agent(Identity, Tenant, Base):
 class SwitchReceipt(Identity, Tenant, Base):
     __tablename__ = 'agent_messages'
     agent_id: Mapped[str] = mapped_column(ForeignKey('agents.id'))
-    sequence: Mapped[int] = mapped_column(Integer)
+    sequence: Mapped[int] = mapped_column(BigInteger)
     payload: Mapped[dict] = mapped_column(JSON)
     status: Mapped[str] = mapped_column(String(20), default='pending')
     attempts: Mapped[int] = mapped_column(Integer, default=0)

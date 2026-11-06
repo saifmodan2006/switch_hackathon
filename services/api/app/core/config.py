@@ -17,6 +17,7 @@ class Settings(BaseSettings):
     model_base_url: str = 'http://localhost:11434'
     model_name: str = 'qwen3:8b'
     model_api_key: str = ''
+    model_allow_external_private_data: bool = False
     smtp_host: str = ''
     smtp_port: int = 1025
     smtp_username: str = ''

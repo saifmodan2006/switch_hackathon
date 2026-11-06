@@ -4,9 +4,9 @@
 
 A human-led business operations workspace for the Flip the Switch Hackathon. SwitchOps combines CRM, durable requests, six specialist agents, cited research, versioned proposals, exact-payload human approvals, SMTP execution and internal follow-ups. SQL is the business source of truth. **Genuine Switch Rooms carry every specialist handoff.**
 
-This repository contains a working local web/API application and deterministic integration tests. It is **not yet certified fully operational or production-ready**: live Switch/Mattermost/model validation and Docker startup were unavailable in the build environment. See [verification](docs/VERIFICATION.md) and the [acceptance matrix](docs/ACCEPTANCE.md) for exactly what has and has not been delivered.
+The live local sandbox workflow is now verified with real Google Gemini inference, official Switch 0.31.0, Mattermost, PostgreSQL, Redis, MinIO and Mailpit. Six agents completed the fictional Acme request through human-approved proposal v2, one sandbox email and persisted follow-up. See the [live verification report](docs/LIVE_VERIFICATION.md), [test history](docs/VERIFICATION.md) and [acceptance matrix](docs/ACCEPTANCE.md). This is not a production-readiness certification.
 
-![Actual application screenshot, synthetic QA workspace](docs/screenshots/overview-desktop.png)
+![Live application, six connected agents and completed Acme workflow](docs/screenshots/live-overview.png)
 
 ## What is implemented
 

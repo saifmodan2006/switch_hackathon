@@ -7,6 +7,7 @@ Generated from installed Python distributions and the resolved npm lockfile. Thi
 | Package | Version | Declared license |
 |---|---|---|
 | @hookform/resolvers | 7.0.3 | MIT |
+| @phosphor-icons/react | 2.1.10 | MIT |
 | @playwright/test | 1.65.0 | Apache-2.0 |
 | @radix-ui/react-dialog | 1.3.1 | MIT |
 | @radix-ui/react-slot | 1.5.0 | MIT |
@@ -17,6 +18,7 @@ Generated from installed Python distributions and the resolved npm lockfile. Thi
 | @types/react-dom | 19.3.0 | MIT |
 | class-variance-authority | 0.7.1 | Apache-2.0 |
 | clsx | 2.1.1 | MIT |
+| geist | 1.9.2 | SIL OPEN FONT LICENSE |
 | lucide-react | 1.70.0 | ISC |
 | motion | 14.10.1 | MIT |
 | next | 16.4.5 | MIT |

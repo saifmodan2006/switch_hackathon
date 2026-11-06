@@ -19,10 +19,12 @@ def transition(db, workflow: Workflow, target: str, message: str, agent='', swit
         allowed = STATES.index(target) == STATES.index(current) + 1
     if current in {'BLOCKED', 'FAILED', 'NEEDS_INFORMATION'} and target == 'TRIAGING':
         allowed = True
-    if current == 'AWAITING_APPROVAL' and target == 'DRAFTING':
+    if current in {'AWAITING_APPROVAL','REVIEWING'} and target == 'DRAFTING':
         allowed = True
     if not allowed:
         raise HTTPException(409, f'Invalid workflow transition: {current} → {target}')
+    if target == 'BLOCKED':
+        workflow.context = {**workflow.context,'resume_status':current}
     workflow.status = target
     if target == 'COMPLETED':
         workflow.completed_at = now()

@@ -48,6 +48,7 @@ async def handoff(db, workflow, sender, target_slug, purpose):
     target = await db.scalar(select(Agent).where(Agent.org_id == workflow.org_id, Agent.slug == target_slug))
     if not target or workflow.room_id not in target.rooms:
         raise SwitchError(f'{target_slug} is not mapped to this Switch room')
+    await db.refresh(target)
     if target.status != 'connected' or not target.last_seen or (now()-target.last_seen.replace(tzinfo=timezone.utc)).total_seconds()>8:
         raise SwitchError(f'{target_slug} is disconnected; the handoff is paused rather than sent into an unclaimed room')
     if not target.participant_id or not sender.participant_id:
@@ -61,6 +62,7 @@ async def handoff(db, workflow, sender, target_slug, purpose):
         await client.close()
     workflow.handoffs += 1
     workflow.context = {**workflow.context, 'expected_agent': target_slug, 'expected_handoff': workflow.handoffs,
+                        'expected_sender': sender.slug,
                         'awaiting_since': now().isoformat()}
     db.add(WorkflowEvent(org_id=workflow.org_id, workflow_id=workflow.id, kind='HANDOFF', agent=sender.slug,
                          message=f'{sender.slug} → {target_slug}: {purpose}', data={'switch_response': result, 'handoff': workflow.handoffs}))
@@ -68,17 +70,27 @@ async def handoff(db, workflow, sender, target_slug, purpose):
 
 
 async def context_for(db, workflow, agent):
-    context = {'request': workflow.request, 'prior_findings': workflow.context.get('findings', {}),
+    context = {'workflow_id': workflow.id, 'request': workflow.request, 'prior_findings': workflow.context.get('findings', {}),
                'revision_request': workflow.context.get('revision_request', ''), 'manual_document': workflow.context.get('manual_document', '')}
-    if agent.slug in {'ops-coordinator', 'customer-intelligence'} and workflow.customer_id:
+    if agent.slug in {'ops-coordinator', 'customer-intelligence', 'quality-reviewer'} and workflow.customer_id:
         customer = await db.get(Customer, workflow.customer_id)
         context['customer'] = {'id': customer.id, 'name': customer.name, 'company': customer.company, 'notes': customer.notes,
                                'stage': customer.stage, 'synthetic': customer.synthetic}
         interactions = (await db.scalars(select(Record).where(Record.org_id == workflow.org_id, Record.kind == 'interactions'))).all()
         context['interactions'] = [{'id': r.id, 'title': r.title, 'data': r.data} for r in interactions if r.data.get('customer_id') == customer.id]
-    if agent.slug == 'research-specialist':
+    if agent.slug in {'research-specialist','quality-reviewer'}:
         context['knowledge'] = await search(db, workflow.org_id, workflow.request)
         context['external_research'] = 'Unavailable: no public research integration configured'
+    if agent.slug in {'communications-specialist','quality-reviewer'}:
+        proposal=await db.scalar(select(Document).where(Document.workflow_id==workflow.id,Document.org_id==workflow.org_id).order_by(Document.version.desc()).limit(1))
+        if proposal:
+            context['actual_saved_proposal']={'id':proposal.id,'version':proposal.version,'content':proposal.content}
+    switch=await client_for(db,agent)
+    try:
+        room=await switch.operation('get_room_detail',{'room_id':workflow.room_id})
+        context['shared_switch_room']={'id':workflow.room_id,'name':room.get('name'),'instructions':room.get('instructions','')}
+    finally:
+        await switch.close()
     if agent.slug == 'scheduling-specialist':
         context['external_availability'] = 'Unknown; internal scheduling only'
     return context
@@ -137,7 +149,14 @@ async def run_specialist(db, workflow, agent):
         await handoff(db, workflow, agent, 'quality-reviewer', 'Check proposal claims against supplied evidence')
     elif slug == 'quality-reviewer':
         if output.issues:
-            transition(db, workflow, 'NEEDS_INFORMATION', 'Quality review requires changes: ' + '; '.join(output.issues), slug)
+            rounds=workflow.context.get('quality_revision_rounds',0)
+            if rounds<2:
+                workflow.context={**workflow.context,'quality_revision_rounds':rounds+1,
+                    'revision_request':'Quality review requires corrections: '+'; '.join(output.issues),'revision_pending':False,'manual_document':''}
+                transition(db,workflow,'DRAFTING','Quality requested a grounded revision: '+'; '.join(output.issues),slug)
+                await handoff(db,workflow,agent,'communications-specialist','Revise the saved proposal to resolve quality findings')
+            else:
+                transition(db, workflow, 'NEEDS_INFORMATION', 'Quality revision budget exhausted: ' + '; '.join(output.issues), slug)
             return
         doc = await db.get(Document, workflow.context['proposal_id'])
         customer = await db.get(Customer, workflow.customer_id) if workflow.customer_id else None
@@ -196,8 +215,10 @@ async def process_receipt(receipt_id):
                 workflow = await db.scalar(select(Workflow).where(Workflow.id == envelope['workflow_id'], Workflow.org_id == agent.org_id))
                 workflow_id = workflow.id if workflow else None
                 predecessor_slug = ALLOWED_PREDECESSOR[agent.slug]
-                if agent.slug == 'communications-specialist' and workflow and workflow.context.get('revision_request'):
-                    predecessor_slug = 'ops-coordinator'
+                expected_sender=workflow.context.get('expected_sender') if workflow else None
+                allowed={predecessor_slug}
+                if agent.slug=='communications-specialist':allowed.update({'ops-coordinator','quality-reviewer'})
+                if expected_sender in allowed:predecessor_slug=expected_sender
                 predecessor = await db.scalar(select(Agent).where(Agent.org_id == agent.org_id, Agent.slug == predecessor_slug))
                 if not workflow or not predecessor or not predecessor.participant_id or sender != predecessor.participant_id:
                     raise PermissionError('Unverified agent sender')
@@ -349,6 +370,8 @@ async def dispatch_pending():
 
 async def run_loop():
     logging.basicConfig(level=logging.INFO)
+    import time
+    started=time.monotonic()
     listeners = {}
     while True:
         async with Session() as db:
@@ -360,7 +383,9 @@ async def run_loop():
         for id in pending:
             await process_receipt(id)
         await maintenance()
-        await dispatch_pending()
+        # Restore real sockets before dispatching durable work after a process restart.
+        if time.monotonic()-started>10:
+            await dispatch_pending()
         await asyncio.sleep(2)
 
 

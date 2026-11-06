@@ -29,6 +29,10 @@ async def test_request_to_approval_to_followup_through_switch_frames(client,owne
     posted=[]
     async def transport(request):
         if request.url.path=='/health':return httpx.Response(200,json={'ok':True})
+        if request.method=='GET' and request.url.path.endswith('/ops'):
+            return httpx.Response(200,json={'operations':{'get_room_detail':{'input_schema':{'required':['room_id']}}}})
+        if request.url.path.endswith('/ops/get_room_detail'):
+            return httpx.Response(200,json={'result':{'name':'Test fixture room','instructions':'Use authorized sources only'}})
         assert request.url.path.endswith('/message')
         posted.append((request.url.path,json.loads(request.content)))
         return httpx.Response(200,json={'message_id':str(len(posted))})

@@ -1,5 +1,7 @@
 # Executed verification
 
+**Current live results:** see [November 7 live verification](LIVE_VERIFICATION.md). The historical unavailable-service statements below describe the earlier build environment and are superseded for the core sandbox workflow. Latest deterministic suite: 22 passed; updated production web build passed. Real Gemini, official Switch, Mattermost, PostgreSQL, Redis, MinIO, Mailpit and exact-version human approval were exercised successfully.
+
 Build environment: Windows, PowerShell, Node **24.21.0**, Python **3.12.10**, npm-resolved Next **16.4.5**, React **19.3.1**, TypeScript **7.0.2**, Tailwind **4.3.5**, FastAPI **0.162.0**, SQLAlchemy **2.1.8**, Pydantic **2.14.3**, Alembic **1.20.1**, HTTPX **0.28.1**, websockets **17.4**, Playwright **1.65.0**. Complete installed package versions and license metadata are in `docs/DEPENDENCIES.md`; Python and npm dependencies are pinned.
 
 ## Executed and passed

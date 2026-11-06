@@ -1,7 +1,7 @@
 'use client';
 import {useState} from 'react';
 import {useQuery,useQueryClient} from '@tanstack/react-query';
-import {MessageSquare,Send} from 'lucide-react';
+import {MessageSquare,Send} from '@/components/icons';
 import {toast} from 'sonner';
 import {api,type Entity} from '@/lib/api';
 import {Button} from './ui/button';
